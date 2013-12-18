@@ -1,0 +1,12 @@
+Package: psynet
+Type: Package
+Title: Automatic network analysis of psychological data
+Version: 0.1
+Date: 2013-12-18
+Author: Sacha Epskamp, Giulio Costantini
+Maintainer: Sacha Epskamp <sacha.epskamp@gmail.com>
+Description: 
+License: GPL-2
+Bytecompile: yes
+Imports: qgraph, psych, parcor, glmnet
+Depends: parcor
