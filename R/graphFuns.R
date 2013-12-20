@@ -4,9 +4,12 @@ graph_cor <- function(
   scale, 
   corMat, #Logical indicating if x is correlation matrix
   title = TRUE,
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing correlation graph")
+  
   if (missing(corMat))
   {
     corMat <- nrow(x)==ncol(x) && all(diag(x)==1) && isSymmetric(x)
@@ -35,9 +38,12 @@ graph_pcor <- function(
   scale, 
   corMat, #Logical indicating if x is correlation matrix
   title = TRUE,
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing partial correlation graph")
+  
   if (missing(corMat))
   {
     corMat <- nrow(x)==ncol(x) && all(diag(x)==1) && isSymmetric(x)
@@ -66,9 +72,12 @@ graph_alpcor <- function(
   x, # Data or cormat
   scale, 
   title = TRUE,
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing correlation graph (adaptive lasso)")
+  
   if (missing(scale)) scale <- autoScale(x)
   
   if (scale != "continuous")
@@ -94,17 +103,20 @@ graph_plspcor <- function(
   x, # Data or cormat
   scale, 
   title = TRUE,
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing correlation graph (PLS)")
+  
   if (missing(scale)) scale <- autoScale(x)
   
   if (scale != "continuous")
   {
-    warning("Data treated as continous for adaptive LASSO partial correlations")
+    warning("Data treated as continous for PLS partial correlations")
   }
   
-  x <- round(pls.net(x)$pcor,10)
+  x <- round(pls.net(as.matrix(x))$pcor,10)
   
   Res <- list(
     graph = x,
@@ -125,9 +137,12 @@ graph_pc <- function(
   title = TRUE,
   pcAlpha = 0.05,
   n, # Number of observations
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing pc-algorithm graph")
+  
   if (missing(corMat))
   {
     corMat <- nrow(x)==ncol(x) && all(diag(x)==1) && isSymmetric(x)
@@ -171,9 +186,12 @@ graph_pcskel <- function(
   title = TRUE,
   pcAlpha = 0.05,
   n, # Number of observations
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing pc-algorithm graph (skeleton)")
+  
   if (missing(corMat))
   {
     corMat <- nrow(x)==ncol(x) && all(diag(x)==1) && isSymmetric(x)
@@ -213,9 +231,12 @@ graph_pcskel <- function(
 graph_BDbest <- function(
   BDobject,
   title = TRUE,
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing best posterior BDgraph graph")
+  
  Adj <- select(BDobject)
   
   Res <- list(
@@ -233,9 +254,12 @@ graph_BDbest <- function(
 graph_BDpost <- function(
   BDobject,
   title = TRUE,
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing BDgraph posterior probability graph")
+  
   Adj <- phat(BDobject)
   
   Res <- list(
@@ -253,9 +277,12 @@ graph_BDpost <- function(
 graph_BDavg <- function(
   BDobject,
   title = TRUE,
+  verbose = FALSE,
   ... # Args sent to qgraph
 )
 {
+  if (verbose) message("psynet: Constructing BDgraph average partial correlation graph")
+  
   Adj <- BDobject$Khat
   diag(Adj) <- -1*diag(Adj)
   Adj <-  - Adj / sqrt(diag(Adj)%o%diag(Adj))
@@ -267,6 +294,94 @@ graph_BDavg <- function(
   Res$qgraph <- qgraph(Adj, ...)
   
   if (title) addTitle("BDgraph (Average posterior partial correlations)")
+  
+  return(Res)
+}
+
+
+# BNlearn:
+graph_bnlearn <- function(
+  x, # Data
+  scale, 
+  title = TRUE,
+  bnlearnFun,
+  bnlearnArgs = list(),
+  verbose = FALSE,
+  ... # Args sent to qgraph
+)
+{
+  if (verbose) message(paste0("psynet: Constructing bnlearn graph (",bnlearnFun,")"))
+  
+  stopifnot(!missing(bnlearnFun))
+  
+  x <- as.data.frame(x)
+  
+  if (missing(scale)) scale <- autoScale(x)
+  
+  if (scale=="dichotomous")
+  {
+    for (i in 1:ncol(x)) x[,i] <- factor(x[,i])
+  }
+  
+  if (scale=="ordinal")
+  {
+    for (i in 1:ncol(x)) x[,i] <- ordered(x[,i])
+  }
+  
+  bn <- do.call(get(bnlearnFun), c(list(x),bnlearnArgs))
+    
+  Res <- list(
+    graph = NULL,
+    output = bn)
+  
+  Res$qgraph <- qgraph(bn, ...)
+  
+  if (title) addTitle(paste0("bnlearn (",bnlearnFun,")"))
+  
+  return(Res)
+}
+
+
+
+# BNlearn boot:
+graph_bnboot <- function(
+  x, # Data
+  scale, 
+  title = TRUE,
+  bnlearnFun, # character
+  bnlearnArgs = list(),
+  bnbootArgs = list(),
+  verbose = FALSE,
+  ... # Args sent to qgraph
+)
+{
+  if (verbose) message(paste0("psynet: Constructing bnlearn bootstrapped strength graph (",bnlearnFun,")"))
+  
+  stopifnot(!missing(bnlearnFun))
+  
+  x <- as.data.frame(x)
+  
+  if (missing(scale)) scale <- autoScale(x)
+  
+  if (scale=="dichotomous")
+  {
+    for (i in 1:ncol(x)) x[,i] <- factor(x[,i])
+  }
+  
+  if (scale=="ordinal")
+  {
+    for (i in 1:ncol(x)) x[,i] <- ordered(x[,i])
+  }
+  
+  bn <- do.call(boot.strength, c(list(data=x,algorithm = bnlearnFun, algorithm.args=bnlearnArgs),bnbootArgs))
+  
+  Res <- list(
+    graph = NULL,
+    output = bn)
+  
+  Res$qgraph <- qgraph(bn, probabilityEdges = TRUE, ...)
+  
+  if (title) addTitle(paste0("bnlearn bootstrapped posterior probabilities (",bnlearnFun,")"))
   
   return(Res)
 }
