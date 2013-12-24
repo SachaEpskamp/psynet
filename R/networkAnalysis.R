@@ -14,6 +14,7 @@ networkAnalysis <- function(
   scale, # "dichotomous", "ordinal" or "continuous". Is otherwise detected
   ask = FALSE, # Ask to go to next plot?
   titles = TRUE, # Add titles?
+  citations = TRUE, # add citations?
   layout = "spring", # layout to be used in all graphs
   layoutToFirst = TRUE, # equate layout to the layout of the first plot?
   pcAlpha = 0.05, # alpha used in pcalg functions
@@ -21,8 +22,12 @@ networkAnalysis <- function(
   bnlearnArgs = list(),
   bnbootArgs = list(R = 200),
   parallelEdge = TRUE, # Same as in qgraph
+  labels = TRUE, # Same as in qgraph
   verbose = TRUE, # Print messages such as RUNNOING BDGRAPH
-  ... # qgraph arguments
+  pcNoDicho = FALSE, # pc on tetra
+  adaptDF = TRUE,
+  graphArgs = list(), # named list with qgraph args
+  ... # general qgraph arguments
   )
 {
   # Set ask par:
@@ -34,6 +39,11 @@ networkAnalysis <- function(
     scale <- autoScale(x)
   }
   
+  # set labels:
+  if (isTRUE(labels))
+  {
+    if (!is.null(colnames(x)))labels <- colnames(x) else labels <- seq_len(ncol(x))
+  }
   # Compute correlations:
   CorMat <- getCors(x,scale)
   
@@ -55,30 +65,32 @@ networkAnalysis <- function(
     
   for (m in seq_along(methods))
   {
+    meth <- methods[m]
+    
     if (grepl("^bn\\.",methods[m]))
     {
       bnFunName <- gsub("bn.","",methods[m])
-      methods[m] <- "bn"
+      meth <- "bn"
     }
     
     if (grepl("^bnboot\\.",methods[m]))
     {
       bnFunName <- gsub("bnboot.","",methods[m])
-      methods[m] <- "bnboot"
+      meth <- "bnboot"
     }
 
-    Results[[methods[m]]] <- try(switch(methods[m],
-                         cor = graph_cor(CorMat, corMat = TRUE, title = titles, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         pcor = graph_pcor(CorMat, corMat = TRUE, title = titles, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         alpcor = graph_alpcor(x, scale = scale, title = titles, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         plspcor = graph_plspcor(x, scale = scale, title = titles, layout = layout, parallelEdge = parallelEdge,verbose = verbose,  ...),
-                         pc = graph_pc(CorMat, scale = scale, title = titles, layout = layout, n = nrow(x), pcAlpha = pcAlpha, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         pcskel = graph_pcskel(CorMat, scale = scale, title = titles, layout = layout, n = nrow(x), pcAlpha = pcAlpha, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         BDbest = graph_BDbest(BDobject, title = titles, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         BDpost = graph_BDpost(BDobject, title = titles, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         BDavg = graph_BDavg(BDobject, title = titles, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         bn = graph_bnlearn(x,   scale = scale, title = titles,  bnlearnFun = bnFunName,  bnlearnArgs = bnlearnArgs, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...),
-                         bnboot = graph_bnboot(x,   scale = scale, title = titles,  bnlearnFun = bnFunName,  bnlearnArgs = bnlearnArgs,  bnbootArgs = bnbootArgs, layout = layout, parallelEdge = parallelEdge, verbose = verbose, ...)
+    Results[[methods[m]]] <- try(switch(meth,
+                         cor = do.call(graph_cor,c(list(CorMat, corMat = TRUE, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,  ...),graphArgs[[methods[m]]])),
+                         pcor = do.call(graph_pcor,c(list(CorMat, corMat = TRUE, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels, ...),graphArgs[[methods[m]]])),
+                         alpcor = do.call(graph_alpcor,c(list(x, scale = scale, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose,labels = labels, ...),graphArgs[[methods[m]]])),
+                         plspcor = do.call(graph_plspcor,c(list(x, scale = scale, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge,verbose = verbose,  labels = labels, ...),graphArgs[[methods[m]]])),
+                         pc = do.call(graph_pc,c(list(x, corMat = CorMat, scale = scale, title = titles, citation = citations, layout = layout, n = nrow(x), pcAlpha = pcAlpha, parallelEdge = parallelEdge, verbose = verbose, labels = labels, pcNoDicho = pcNoDicho, skeleton = FALSE, adaptDF = adaptDF, ...),graphArgs[[methods[m]]])),
+                         pcskel = do.call(graph_pc,c(list(x, corMat = CorMat, scale = scale, title = titles, citation = citations, layout = layout, n = nrow(x), pcAlpha = pcAlpha, parallelEdge = parallelEdge, verbose = verbose, labels = labels, pcNoDicho = pcNoDicho, skeleton =TRUE, adaptDF = adaptDF, ...),graphArgs[[methods[m]]])),
+                         BDbest = do.call(graph_BDbest,c(list(BDobject, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,...),graphArgs[[methods[m]]])),
+                         BDpost = do.call(graph_BDpost,c(list(BDobject, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,maximum = 1,...),graphArgs[[methods[m]]])),
+                         BDavg = do.call(graph_BDavg,c(list(BDobject, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,...),graphArgs[[methods[m]]])),
+                         bn = do.call(graph_bnlearn,c(list(x,   scale = scale, title = titles, citation = citations,  bnlearnFun = bnFunName,  bnlearnArgs = bnlearnArgs, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,...),graphArgs[[methods[m]]])),
+                         bnboot = do.call(graph_bnboot,c(list(x,   scale = scale, title = titles, citation = citations,  bnlearnFun = bnFunName,  bnlearnArgs = bnlearnArgs,  bnbootArgs = bnbootArgs, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,maximum = 1,...),graphArgs[[methods[m]]]))
                          ))
     
     if (m == 1 && layoutToFirst)
@@ -87,6 +99,8 @@ networkAnalysis <- function(
     }
     
   }
+  
+  class(Results) <- "psynet"
   
   return(Results)
 }

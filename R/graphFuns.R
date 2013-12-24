@@ -3,7 +3,8 @@ graph_cor <- function(
   x, # Data or cormat
   scale, 
   corMat, #Logical indicating if x is correlation matrix
-  title = TRUE,
+  title = FALSE, 
+  citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
 )
@@ -24,9 +25,18 @@ graph_cor <- function(
     graph = x,
     output = NULL)
   
-  Res$qgraph <- qgraph(x, ...)
   
-  if (title) addTitle("Correlations")
+  if (title) 
+  {
+    ann <- "Correlations"
+  } else ann <- NULL
+
+  if (citation)
+  {
+    cit <- CitationExpr("qgraph")
+  } else cit <- NULL
+  
+  Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
   
   return(Res)
 }
@@ -37,7 +47,7 @@ graph_pcor <- function(
   x, # Data or cormat
   scale, 
   corMat, #Logical indicating if x is correlation matrix
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
 )
@@ -60,10 +70,20 @@ graph_pcor <- function(
     graph = x,
     output = NULL)
   
-  Res$qgraph <- qgraph(x, ...)
   
-  if (title) addTitle("Partial Correlations")
+  if (title) 
+  {
+    ann <- "Partial Correlations"
+  } else ann <- NULL
+
+  if (citation)
+  {
+    cit <- CitationExpr("qgraph")
+  } else cit <- NULL
   
+  
+  Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
+
   return(Res)
 }
 
@@ -71,7 +91,7 @@ graph_pcor <- function(
 graph_alpcor <- function(
   x, # Data or cormat
   scale, 
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
 )
@@ -90,11 +110,20 @@ graph_alpcor <- function(
   Res <- list(
     graph = x,
     output = NULL)
+
+  if (title) 
+  {
+    ann <- "Partial Correlations (adaptive LASSO)"
+  } else ann <- NULL
+
+  if (citation)
+  {
+    cit <- CitationExpr("parcor")
+  } else cit <- NULL
   
-  Res$qgraph <- qgraph(x, ...)
   
-  if (title) addTitle("Partial Correlations (adaptive LASSO)")
-  
+  Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
+
   return(Res)
 }
 
@@ -102,7 +131,7 @@ graph_alpcor <- function(
 graph_plspcor <- function(
   x, # Data or cormat
   scale, 
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
 )
@@ -121,11 +150,19 @@ graph_plspcor <- function(
   Res <- list(
     graph = x,
     output = NULL)
+
+  if (title) 
+  {
+    ann <- "Partial Correlations (partial least squares)"
+  } else ann <- NULL
+
+  if (citation)
+  {
+    cit <- CitationExpr("parcor")
+  } else cit <- NULL
   
-  Res$qgraph <- qgraph(x, ...)
-  
-  if (title) addTitle("Partial Correlations (partial least squares)")
-  
+  Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
+
   return(Res)
 }
 
@@ -133,104 +170,147 @@ graph_plspcor <- function(
 graph_pc <- function(
   x, # Data
   scale, 
-  corMat,
-  title = TRUE,
+  corMat, # correlat matr
+  title = FALSE, citation = FALSE,
   pcAlpha = 0.05,
   n, # Number of observations
   verbose = FALSE,
+  pcNoDicho = FALSE, # Base pc on tetra?
+  skeleton = FALSE,
+  adaptDF = TRUE,
   ... # Args sent to qgraph
 )
 {
   if (verbose) message("psynet: Constructing pc-algorithm graph")
   
-  if (missing(corMat))
-  {
-    corMat <- nrow(x)==ncol(x) && all(diag(x)==1) && isSymmetric(x)
-  }
-  
   if (missing(n))
   {
-    if (!corMat)
+    if (!missing(x))
     {
       n <- nrow(x)
     } else stop("n not supplied")
   }
   
-  if (!corMat)
+  if (missing(scale)) 
   {
-    cors <- getCors(x, scale)
-  } else cors <- x
+   if (missing(x)) stop("'x' or 'scale' needs to be assigned")
+    
+    scale <- autoScale(x)
+    
+  }
   
-  pc <- pc(
-    suffStat = list(C = cors, n = n),
-    indepTest = gaussCItest, 
-    p = ncol(x), 
-    alpha = pcAlpha)
+  if (scale == "dichotomous" &  !pcNoDicho)
+  { 
+    if (missing(x)) stop("Data needed for binary pcalg")
+    
+    suffStat = list(dm = x, adaptDF = adaptDF)
+    indepTest = binCItest
+  } else
+  {
+    if (missing(corMat))
+    {
+      corMat <- getCors(x, scale)
+    } 
+    suffStat = list(C = corMat, n = n)
+    indepTest = gaussCItest
+    
+  }
+  
+  if (skeleton)
+  {
+    pc <- skeleton(
+      suffStat = suffStat,
+      indepTest = indepTest,
+      p = ncol(x), 
+      alpha = pcAlpha)
+    
+  } else 
+  {
+    pc <- pc(
+      suffStat = suffStat,
+      indepTest = indepTest,
+      p = ncol(x), 
+      alpha = pcAlpha)
+    
+  }
   
   Res <- list(
     graph = NULL,
     output = pc)
-  
-  Res$qgraph <- qgraph(pc, ...)
-  
-  if (title) addTitle("PC-algorithm")
-  
-  return(Res)
-}
 
-# pcalg (skeleton)
-graph_pcskel <- function(
-  x, # Data
-  scale, 
-  corMat,
-  title = TRUE,
-  pcAlpha = 0.05,
-  n, # Number of observations
-  verbose = FALSE,
-  ... # Args sent to qgraph
-)
-{
-  if (verbose) message("psynet: Constructing pc-algorithm graph (skeleton)")
   
-  if (missing(corMat))
+  if (title) 
   {
-    corMat <- nrow(x)==ncol(x) && all(diag(x)==1) && isSymmetric(x)
-  }
-  
-  if (missing(n))
-  {
-    if (!corMat)
+    if (skeleton)
     {
-      n <- nrow(x)
-    } else stop("n not supplied")
-  }
-  
-  if (!corMat)
+      ann <- "PC-algorithm (skeleton)"
+    } else ann <- "PC-algorithm"
+  } else ann <- NULL
+
+
+  if (citation)
   {
-    cors <- getCors(x, scale)
-  } else cors <- x
+    cit <- CitationExpr("pcalg")
+  } else cit <- NULL
   
-  pc <- skeleton(
-    suffStat = list(C = cors, n = n),
-    indepTest = gaussCItest, 
-    p = ncol(x), 
-    alpha = pcAlpha)
-  
-  Res <- list(
-    graph = NULL,
-    output = pc)
-  
-  Res$qgraph <- qgraph(pc, ...)
-  
-  if (title) addTitle("PC-algorithm (skeleton)")
-  
+  Res$qgraph <- qgraph(pc, title = ann, postExpression = cit, ...)
+
   return(Res)
 }
+# 
+# # pcalg (skeleton)
+# graph_pcskel <- function(
+#   x, # Data
+#   scale, 
+#   corMat,
+#   title = FALSE, citation = FALSE,
+#   pcAlpha = 0.05,
+#   n, # Number of observations
+#   verbose = FALSE,
+#   ... # Args sent to qgraph
+# )
+# {
+#   if (verbose) message("psynet: Constructing pc-algorithm graph (skeleton)")
+#   
+#   if (missing(corMat))
+#   {
+#     corMat <- nrow(x)==ncol(x) && all(diag(x)==1) && isSymmetric(x)
+#   }
+#   
+#   if (missing(n))
+#   {
+#     if (!corMat)
+#     {
+#       n <- nrow(x)
+#     } else stop("n not supplied")
+#   }
+#   
+#   if (!corMat)
+#   {
+#     cors <- getCors(x, scale)
+#   } else cors <- x
+#   
+#   pc <- skeleton(
+#     suffStat = list(C = cors, n = n),
+#     indepTest = gaussCItest, 
+#     p = ncol(x), 
+#     alpha = pcAlpha)
+#   
+#   Res <- list(
+#     graph = NULL,
+#     output = pc)
+#   
+#   Res$qgraph <- qgraph(pc, ...)
+#   
+#   if (title) addTitle("PC-algorithm (skeleton)")
+#   
+#   return(Res)
+# }
 
 # BDgraph: best
 graph_BDbest <- function(
   BDobject,
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
 )
@@ -243,9 +323,19 @@ graph_BDbest <- function(
     graph = Adj,
     output = BDobject)
   
-  Res$qgraph <- qgraph(Adj, ...)
   
-  if (title) addTitle("BDgraph (graph with highest probability)")
+  
+  if (title) 
+  {
+    ann <- "BDgraph (graph with highest probability)"
+  } else ann <- NULL
+  
+  if (citation)
+  {
+    cit <- CitationExpr("BDgraph")
+  } else cit <- NULL
+  
+  Res$qgraph <- qgraph(Adj, title = ann, postExpression = cit, ...)
   
   return(Res)
 }
@@ -253,7 +343,7 @@ graph_BDbest <- function(
 # BDgraph: phat
 graph_BDpost <- function(
   BDobject,
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
 )
@@ -265,18 +355,27 @@ graph_BDpost <- function(
   Res <- list(
     graph = Adj,
     output = BDobject)
+
+  if (title) 
+  {
+    ann <- "BDgraph (Posterior probabilities)"
+  } else ann <- NULL
+
   
-  Res$qgraph <- qgraph(BDobject, BDgraph = "phat", BDtitles = FALSE, ...)
+  if (citation)
+  {
+    cit <- CitationExpr("BDgraph")
+  } else cit <- NULL
   
-  if (title) addTitle("BDgraph (Posterior probabilities)")
-  
+  Res$qgraph <- qgraph(BDobject, BDgraph = "phat", BDtitles = FALSE, title = ann, postExpression = cit, ...)
+
   return(Res)
 }
 
 # BDgraph: Khat
 graph_BDavg <- function(
   BDobject,
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
 )
@@ -291,9 +390,18 @@ graph_BDavg <- function(
     graph = Adj,
     output = BDobject)
   
-  Res$qgraph <- qgraph(Adj, ...)
+  if (title) 
+  {
+    ann <- "BDgraph (Average posterior partial correlations)"
+  } else ann <- NULL
   
-  if (title) addTitle("BDgraph (Average posterior partial correlations)")
+  
+  if (citation)
+  {
+    cit <- CitationExpr("BDgraph")
+  } else cit <- NULL
+  
+  Res$qgraph <- qgraph(Adj, title = ann, postExpression = cit, ...)
   
   return(Res)
 }
@@ -303,7 +411,7 @@ graph_BDavg <- function(
 graph_bnlearn <- function(
   x, # Data
   scale, 
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   bnlearnFun,
   bnlearnArgs = list(),
   verbose = FALSE,
@@ -334,9 +442,20 @@ graph_bnlearn <- function(
     graph = NULL,
     output = bn)
   
-  Res$qgraph <- qgraph(bn, ...)
+  if (title) 
+  {
+    ann <- paste0("bnlearn (",bnlearnFun,")")
+  } else ann <- NULL
   
-  if (title) addTitle(paste0("bnlearn (",bnlearnFun,")"))
+  
+  if (citation)
+  {
+    cit <- CitationExpr(ref = "  Radhakrishnan Nagarajan, Marco Scutari, Sophie Lebre. (2013)
+  Bayesian Networks in R with Applications in Systems Biology.
+  Springer, New York. ISBN 978-1461464457.")
+  } else cit <- NULL  
+  
+  Res$qgraph <- qgraph(bn, title = ann, postExpression = cit, ...)
   
   return(Res)
 }
@@ -347,7 +466,7 @@ graph_bnlearn <- function(
 graph_bnboot <- function(
   x, # Data
   scale, 
-  title = TRUE,
+  title = FALSE, citation = FALSE,
   bnlearnFun, # character
   bnlearnArgs = list(),
   bnbootArgs = list(),
@@ -379,9 +498,22 @@ graph_bnboot <- function(
     graph = NULL,
     output = bn)
   
-  Res$qgraph <- qgraph(bn, probabilityEdges = TRUE, ...)
   
-  if (title) addTitle(paste0("bnlearn bootstrapped posterior probabilities (",bnlearnFun,")"))
+  if (title) 
+  {
+    ann <- paste0("bnlearn bootstrapped posterior probabilities (",bnlearnFun,")")
+  } else ann <- NULL
+
+  
+  if (citation)
+  {
+    cit <- CitationExpr(ref = "  Radhakrishnan Nagarajan, Marco Scutari, Sophie Lebre. (2013)
+  Bayesian Networks in R with Applications in Systems Biology.
+  Springer, New York. ISBN 978-1461464457.")
+  } else cit <- NULL  
+  
+  
+  Res$qgraph <- qgraph(bn, probabilityEdges = TRUE, title = ann, postExpression = cit, ...)
   
   return(Res)
 }

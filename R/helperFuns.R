@@ -1,7 +1,3 @@
-addTitle <- function(x)
-{
-  text(par('usr')[1] + (par('usr')[2] - par('usr')[1])/40 ,par("usr")[4] - (par('usr')[4] - par('usr')[3])/40,x, adj = c(0,1))      
-}
 
 autoScale <- function(x)
 {
@@ -34,4 +30,22 @@ getCors <- function(x,scale)
   )
   
   return(CorMat)
+}
+
+getCitation <- function(x)
+{
+  str <- capture.output(citation(x))
+  str <- gsub("^\\s+","",str[(grep("^To cite",str)+2):(grep("^A BibTeX entry",str)-2)])
+  return(paste(str,collapse="\n"))
+}
+
+CitationExpr <- function(x,ref,cex=0.4)
+{
+  if (missing(ref)) x <- getCitation(x) else
+  {
+    x <- ref
+    x <- gsub("^\\s+","",x)
+    x <- paste(x,collapse="\n")
+  }
+  paste("text(par('usr')[2] - (par('usr')[2] - par('usr')[1])/40 ,par('usr')[3] + (par('usr')[4] - par('usr')[3])/40,",deparse(x),", adj = c(1,0),cex=",cex,")")      
 }
