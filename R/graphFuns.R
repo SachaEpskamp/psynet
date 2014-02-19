@@ -517,3 +517,47 @@ graph_bnboot <- function(
   
   return(Res)
 }
+
+
+### IsingFit
+
+# Partial least squares pcor:
+graph_IsingFit <- function(
+  x, # Data or cormat
+  scale, 
+  title = FALSE, citation = FALSE,
+  verbose = FALSE,
+  IsingFitArgs = list(),
+  ... # Args sent to qgraph
+)
+{
+  if (verbose) message("psynet: Constructing IsingFit graph")
+  
+  if (missing(scale)) scale <- autoScale(x)
+  
+  if (scale == "Ordinal")
+  {
+    warning("IsingFit routine not well suited for Ordinal data")
+  }
+  
+  Res <- do.call(IsingFit,c(list(x=x, family = ifelse(scale=="dichotomous","binomial","gaussian"), plot = FALSE, 
+                                 progressbar = FALSE), IsingFitArgs))
+  
+  Res <- list(
+    graph = Res$weiadj,
+    output = Res)
+  
+  if (title) 
+  {
+    ann <- "IsingFit"
+  } else ann <- NULL
+  
+  if (citation)
+  {
+    cit <- CitationExpr("IsingFit")
+  } else cit <- NULL
+  
+  Res$qgraph <- qgraph(Res$graph, title = ann, postExpression = cit, ...)
+  
+  return(Res)
+}

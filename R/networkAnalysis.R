@@ -10,8 +10,9 @@
 networkAnalysis <- function(
   x, # dataset, a matrix
 #   methods = c("cor","pcor","lpcor","alpcor","pc","pcskel"),
-  methods = c("cor","pcor", "alpcor","plspcor","pc","pcskel","BDbest","BDpost","BDavg","bn.gs","bnboot.gs","bn.iamb","bnboot.iamb","bn.hc","bnboot.hc","bn.tabu","bnboot.tabu","bn.mmhc","bnboot.mmhc","bn.rsmax2","bnboot.rsmax2","bn.mmpc","bnboot.mmpc","bn.si.hiton.pc","bnboot.si.hiton.pc","bn.chow.liu","bnboot.chow.liu","bn.aracne","bnboot.aracne"),
+  methods = c("cor","pcor", "alpcor","plspcor","pc","pcskel","BDbest","BDpost","BDavg","bn.gs","bnboot.gs","bn.iamb","bnboot.iamb","bn.hc","bnboot.hc","bn.tabu","bnboot.tabu","bn.mmhc","bnboot.mmhc","bn.rsmax2","bnboot.rsmax2","bn.mmpc","bnboot.mmpc","bn.si.hiton.pc","bnboot.si.hiton.pc","bn.chow.liu","bnboot.chow.liu","bn.aracne","bnboot.aracne","IsingFit"),
   scale, # "dichotomous", "ordinal" or "continuous". Is otherwise detected
+  nonparanormal = FALSE, #nonparanormal transformation?
   ask = FALSE, # Ask to go to next plot?
   titles = TRUE, # Add titles?
   citations = TRUE, # add citations?
@@ -27,11 +28,19 @@ networkAnalysis <- function(
   pcNoDicho = FALSE, # pc on tetra
   adaptDF = TRUE,
   graphArgs = list(), # named list with qgraph args
+  IsingFitArgs = list(), # Arguments for IsingFit
   ... # general qgraph arguments
   )
 {
   # Set ask par:
   par(ask = ask)
+  
+  if (nonparanormal)
+  {
+    message("Computing nonparanormal transformation")
+    x <- huge.npn(x)
+    scale <- "continuous"
+  }
   
   # set scale of data:
   if (missing(scale))
@@ -90,7 +99,8 @@ networkAnalysis <- function(
                          BDpost = do.call(graph_BDpost,c(list(BDobject, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,maximum = 1,...),graphArgs[[methods[m]]])),
                          BDavg = do.call(graph_BDavg,c(list(BDobject, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,...),graphArgs[[methods[m]]])),
                          bn = do.call(graph_bnlearn,c(list(x,   scale = scale, title = titles, citation = citations,  bnlearnFun = bnFunName,  bnlearnArgs = bnlearnArgs, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,...),graphArgs[[methods[m]]])),
-                         bnboot = do.call(graph_bnboot,c(list(x,   scale = scale, title = titles, citation = citations,  bnlearnFun = bnFunName,  bnlearnArgs = bnlearnArgs,  bnbootArgs = bnbootArgs, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,maximum = 1,...),graphArgs[[methods[m]]]))
+                         bnboot = do.call(graph_bnboot,c(list(x,   scale = scale, title = titles, citation = citations,  bnlearnFun = bnFunName,  bnlearnArgs = bnlearnArgs,  bnbootArgs = bnbootArgs, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels,maximum = 1,...),graphArgs[[methods[m]]])),
+                         IsingFit = do.call(graph_IsingFit,c(list(x, title = titles, citation = citations, layout = layout, parallelEdge = parallelEdge, verbose = verbose, labels = labels, IsingFitArgs = IsingFitArgs, ...),graphArgs[[methods[m]]]))
                          ))
     
     if (m == 1 && layoutToFirst)
