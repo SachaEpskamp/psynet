@@ -23,7 +23,8 @@ graph_cor <- function(
   
   Res <- list(
     graph = x,
-    output = NULL)
+    output = NULL,
+    method = "cor")
   
   
   if (title) 
@@ -37,7 +38,7 @@ graph_cor <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
-  
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -68,7 +69,8 @@ graph_pcor <- function(
   
   Res <- list(
     graph = x,
-    output = NULL)
+    output = NULL,
+    method = "pcor")
   
   
   if (title) 
@@ -83,7 +85,7 @@ graph_pcor <- function(
   
   
   Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
-
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -109,7 +111,8 @@ graph_alpcor <- function(
   
   Res <- list(
     graph = x,
-    output = NULL)
+    output = NULL,
+    method = "alpcor")
 
   if (title) 
   {
@@ -123,7 +126,7 @@ graph_alpcor <- function(
   
   
   Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
-
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -149,7 +152,8 @@ graph_plspcor <- function(
   
   Res <- list(
     graph = x,
-    output = NULL)
+    output = NULL,
+    method = "plspcor")
 
   if (title) 
   {
@@ -162,7 +166,7 @@ graph_plspcor <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
-
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -236,7 +240,8 @@ graph_pc <- function(
   
   Res <- list(
     graph = NULL,
-    output = pc)
+    output = pc,
+    method = ifelse(skeleton,"pcskel","pc"))
 
   
   if (title) 
@@ -254,7 +259,7 @@ graph_pc <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(pc, title = ann, postExpression = cit, ...)
-
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 # 
@@ -321,7 +326,8 @@ graph_BDbest <- function(
   
   Res <- list(
     graph = Adj,
-    output = BDobject)
+    output = BDobject,
+    method = "BDbest")
   
   
   
@@ -336,7 +342,7 @@ graph_BDbest <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(Adj, title = ann, postExpression = cit, ...)
-  
+ class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -354,7 +360,8 @@ graph_BDpost <- function(
   
   Res <- list(
     graph = Adj,
-    output = BDobject)
+    output = BDobject,
+    method = "BDpost")
 
   if (title) 
   {
@@ -368,7 +375,7 @@ graph_BDpost <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(BDobject, BDgraph = "phat", BDtitles = FALSE, title = ann, postExpression = cit, ...)
-
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -388,7 +395,8 @@ graph_BDavg <- function(
   
   Res <- list(
     graph = Adj,
-    output = BDobject)
+    output = BDobject,
+    method = "BDavg")
   
   if (title) 
   {
@@ -402,7 +410,7 @@ graph_BDavg <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(Adj, title = ann, postExpression = cit, ...)
-  
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -440,7 +448,8 @@ graph_bnlearn <- function(
     
   Res <- list(
     graph = NULL,
-    output = bn)
+    output = bn,
+    method = paste0("bn.",bnlearnFun))
   
   if (title) 
   {
@@ -456,7 +465,7 @@ graph_bnlearn <- function(
   } else cit <- NULL  
   
   Res$qgraph <- qgraph(bn, title = ann, postExpression = cit, ...)
-  
+  class(Res) <- "psynetGraph"
   return(Res)
 }
 
@@ -496,7 +505,8 @@ graph_bnboot <- function(
   
   Res <- list(
     graph = NULL,
-    output = bn)
+    output = bn,
+    method = paste0("bnboot.",bnlearnFun))
   
   
   if (title) 
@@ -514,6 +524,51 @@ graph_bnboot <- function(
   
   
   Res$qgraph <- qgraph(bn, probabilityEdges = TRUE, title = ann, postExpression = cit, ...)
+  class(Res) <- "psynetGraph"
+  return(Res)
+}
+
+
+### IsingFit
+
+# Partial least squares pcor:
+graph_IsingFit <- function(
+  x, # Data or cormat
+  scale, 
+  title = FALSE, citation = FALSE,
+  verbose = FALSE,
+  IsingFitArgs = list(),
+  ... # Args sent to qgraph
+)
+{
+  if (verbose) message("psynet: Constructing IsingFit graph")
   
+  if (missing(scale)) scale <- autoScale(x)
+  
+  if (scale == "Ordinal")
+  {
+    warning("IsingFit routine not well suited for Ordinal data")
+  }
+  
+  Res <- do.call(IsingFit,c(list(x=x, family = ifelse(scale=="dichotomous","binomial","gaussian"), plot = FALSE, 
+                                 progressbar = FALSE), IsingFitArgs))
+  
+  Res <- list(
+    graph = Res$weiadj,
+    output = Res,
+    method = "IsingFit")
+  
+  if (title) 
+  {
+    ann <- "IsingFit"
+  } else ann <- NULL
+  
+  if (citation)
+  {
+    cit <- CitationExpr("IsingFit")
+  } else cit <- NULL
+  
+  Res$qgraph <- qgraph(Res$graph, title = ann, postExpression = cit, ...)
+  class(Res) <- "psynetGraph"
   return(Res)
 }
