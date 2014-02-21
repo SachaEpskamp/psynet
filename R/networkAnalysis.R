@@ -33,6 +33,7 @@ networkAnalysis <- function(
   )
 {
   # Set ask par:
+  askOrig <- par("ask")
   par(ask = ask)
   
   if (nonparanormal)
@@ -109,6 +110,9 @@ networkAnalysis <- function(
     }
     
   }
+  
+  
+  par(ask = askOrig)
   
   class(Results) <- "psynet"
   

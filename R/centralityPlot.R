@@ -1,6 +1,6 @@
-centralityPlot <- function(x, labels)
+centralityPlot <- function(x, labels, relative = TRUE)
 {
-  LongCent <- centralityTable(x, labels)
+  LongCent <- centralityTable(x, labels, relative)
   
   # Ordereing by node name to make nice paths:
   LongCent <- LongCent[order(LongCent$node),] 
