@@ -21,12 +21,12 @@ centralityTable <- function(x, labels)
     CentAuto <- list(CentAuto)
   }
   
-  # Compute clustering:
-  ClustAuto <- qgraph:::clustcoef_auto(x)
-  if (singleGraph)
-  {
-    ClustAuto <- list(ClustAuto)
-  }
+#   # Compute clustering:
+#   ClustAuto <- qgraph:::clustcoef_auto(x)
+#   if (singleGraph)
+#   {
+#     ClustAuto <- list(ClustAuto)
+#   }
   
   # Add method and labels to tables:
   for (i in seq_along(x))
@@ -34,8 +34,8 @@ centralityTable <- function(x, labels)
     CentAuto[[i]][['node.centrality']][['method']] <- x[[i]]$method
     CentAuto[[i]][['node.centrality']][['node']] <- labels
     CentAuto[[i]][['edge.centrality']][['method']] <- x[[i]]$method
-    ClustAuto[[i]][['method']] <- x[[i]]$method
-    ClustAuto[[i]][['node']] <- labels
+#     ClustAuto[[i]][['method']] <- x[[i]]$method
+#     ClustAuto[[i]][['node']] <- labels
   }
   ## WIDE FORMAT TABLE:
   WideCent <- rbind.fill(lapply(CentAuto,'[[','node.centrality'))
