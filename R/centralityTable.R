@@ -36,7 +36,7 @@ centralityTable <- function(x, labels, relative = TRUE)
     {
       for (j in seq_len(ncol(CentAuto[[i]][['node.centrality']])))
       {
-        CentAuto[[i]][['node.centrality']][,j] <- CentAuto[[i]][['node.centrality']][,j] / max(abs(CentAuto[[i]][['node.centrality']][,j]))
+        CentAuto[[i]][['node.centrality']][,j] <- CentAuto[[i]][['node.centrality']][,j] / max(abs(CentAuto[[i]][['node.centrality']][,j]), na.rm = TRUE)
       } 
     }
     

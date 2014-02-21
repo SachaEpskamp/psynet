@@ -35,7 +35,7 @@ clusteringTable <- function(x, labels, signed = FALSE, relative = TRUE)
     {
       for (j in seq_len(ncol(ClustAuto[[i]])))
       {
-        ClustAuto[[i]][j] <- ClustAuto[[i]][j] / max(abs(ClustAuto[[i]][j]))
+        ClustAuto[[i]][j] <- ClustAuto[[i]][j] / max(abs(ClustAuto[[i]][j]), na.rm = TRUE)
       } 
     }
     
