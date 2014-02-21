@@ -11,3 +11,5 @@ centralityPlot <- function(x, labels, relative = TRUE)
   
   return(g)  
 }
+
+

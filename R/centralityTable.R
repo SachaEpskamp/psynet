@@ -8,7 +8,16 @@ centralityTable <- function(x, labels, relative = TRUE)
   if (missing(labels))
   {
     W <- getWmat(x)
-    if (is.list(W)) labels <- colnames(W[[1]]) else labels <- colnames(W) 
+    if (is.list(W)) 
+    {
+      labels <- colnames(W[[1]]) 
+
+      if (is.null(labels)) labels <- seq_len(nrow(W[[1]]))
+    } else 
+    {
+      labels <- colnames(W) 
+      if (is.null(labels)) labels <- seq_len(nrow(W))
+    }
   } 
   
   # Is the graph a single graph?
@@ -46,6 +55,7 @@ centralityTable <- function(x, labels, relative = TRUE)
 #     ClustAuto[[i]][['method']] <- x[[i]]$method
 #     ClustAuto[[i]][['node']] <- labels
   }
+
   ## WIDE FORMAT TABLE:
   WideCent <- rbind.fill(lapply(CentAuto,'[[','node.centrality'))
   
