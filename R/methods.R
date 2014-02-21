@@ -18,7 +18,7 @@ plot.psynet <- function(
  
  for (m in seq_along(include))
  {
-   Res[[include[m]]] <- qgraph(x[[include[m]]]$qgraph, layout = layout)
+   Res[[include[m]]] <- qgraph(x[[include[m]]]$qgraph, layout = layout, ...)
   
    if (m == 1 && layoutToFirst)
    {
