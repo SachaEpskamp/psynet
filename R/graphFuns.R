@@ -65,10 +65,11 @@ graph_pcor <- function(
     x <- getCors(x, scale)
   }
   
-  x <- cor2pcor(x)
+  g <- cor2pcor(x)
+  colnames(g) <- rownames(g) <- colnames(x)
   
   Res <- list(
-    graph = x,
+    graph = g,
     output = NULL,
     method = "pcor")
   
@@ -84,7 +85,7 @@ graph_pcor <- function(
   } else cit <- NULL
   
   
-  Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
+  Res$qgraph <- qgraph(g, title = ann, postExpression = cit, ...)
   class(Res) <- "psynetGraph"
   return(Res)
 }
@@ -107,11 +108,13 @@ graph_alpcor <- function(
     warning("Data treated as continous for adaptive LASSO partial correlations")
   }
   
-  x <- round(adalasso.net(x)$pcor.adalasso,10)
+  Out <- adalasso.net(x)
+  g <- round(Out$pcor.adalasso,14)
+  colnames(g) <- rownames(g) <- colnames(x)
   
   Res <- list(
-    graph = x,
-    output = NULL,
+    graph = g,
+    output = Out,
     method = "alpcor")
 
   if (title) 
@@ -125,7 +128,7 @@ graph_alpcor <- function(
   } else cit <- NULL
   
   
-  Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
+  Res$qgraph <- qgraph(g, title = ann, postExpression = cit, ...)
   class(Res) <- "psynetGraph"
   return(Res)
 }
@@ -148,12 +151,15 @@ graph_plspcor <- function(
     warning("Data treated as continous for PLS partial correlations")
   }
   
-  x <- round(pls.net(as.matrix(x))$pcor,10)
+  Out <- pls.net(x)
+  g <- round(Out$pcor,14)
+  colnames(g) <- rownames(g) <- colnames(x)
   
   Res <- list(
-    graph = x,
-    output = NULL,
+    graph = g,
+    output = Out,
     method = "plspcor")
+  
 
   if (title) 
   {
@@ -165,7 +171,7 @@ graph_plspcor <- function(
     cit <- CitationExpr("parcor")
   } else cit <- NULL
   
-  Res$qgraph <- qgraph(x, title = ann, postExpression = cit, ...)
+  Res$qgraph <- qgraph(g, title = ann, postExpression = cit, ...)
   class(Res) <- "psynetGraph"
   return(Res)
 }
@@ -259,6 +265,10 @@ graph_pc <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(pc, title = ann, postExpression = cit, ...)
+  
+  Res$graph <- getWmat(Res$qgraph)
+  colnames(Res$graph) <- rownames(Res$graph) <- colnames(x)
+  
   class(Res) <- "psynetGraph"
   return(Res)
 }
@@ -465,6 +475,8 @@ graph_bnlearn <- function(
   } else cit <- NULL  
   
   Res$qgraph <- qgraph(bn, title = ann, postExpression = cit, ...)
+  Res$graph <- getWmat(Res$qgraph)
+  colnames(Res$graph) <- rownames(Res$graph) <- colnames(x)
   class(Res) <- "psynetGraph"
   return(Res)
 }
@@ -524,6 +536,8 @@ graph_bnboot <- function(
   
   
   Res$qgraph <- qgraph(bn, probabilityEdges = TRUE, title = ann, postExpression = cit, ...)
+  Res$graph <- getWmat(Res$qgraph)
+  colnames(Res$graph) <- rownames(Res$graph) <- colnames(x)
   class(Res) <- "psynetGraph"
   return(Res)
 }
@@ -569,6 +583,7 @@ graph_IsingFit <- function(
   } else cit <- NULL
   
   Res$qgraph <- qgraph(Res$graph, title = ann, postExpression = cit, ...)
+  colnames(Res$graph) <- rownames(Res$graph) <- colnames(x)
   class(Res) <- "psynetGraph"
   return(Res)
 }

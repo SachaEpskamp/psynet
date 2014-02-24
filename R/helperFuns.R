@@ -29,6 +29,8 @@ getCors <- function(x,scale)
                    continuous = cor(x, use = "pairwise.complete.obs")
   )
   
+  colnames(CorMat) <- rownames(CorMat) <- colnames(x)
+  
   return(CorMat)
 }
 
