@@ -8,5 +8,5 @@ Maintainer: Sacha Epskamp <sacha.epskamp@gmail.com>
 Description: Automatic network analysis of psychological data
 License: GPL-2
 Bytecompile: yes
-Imports: psych, parcor, glmnet, corpcor, pcalg, bnlearn, BDgraph, huge, IsingFit, plyr, reshape2, ggplot2
+Imports: psych, parcor, glmnet, corpcor, pcalg, bnlearn, BDgraph, huge, IsingFit, plyr, reshape2, ggplot2, cvTools, glasso, glassomix
 Depends: qgraph, parcor

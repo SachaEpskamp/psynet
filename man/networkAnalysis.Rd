@@ -94,7 +94,7 @@ Sacha Epskamp <mail@sachaepskamp.com>
 data(smoking)
 
 # Estimate three networks:
-Res <- networkAnalysis(smoking, methods = c( "cor", "alpcor", "IsingFit" ), ask = FALSE)
+Res <- networkAnalysis(smoking, methods = c( "pc", "IsingFit" , "bn.gs"), ask = FALSE)
 
 # Centrality measures:
 centralityPlot(Res)

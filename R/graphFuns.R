@@ -22,7 +22,7 @@ graph_cor <- function(
   }
   
   Res <- list(
-    graph = x,
+    graph = as.matrix(forceSymmetric(x)),
     output = NULL,
     method = "cor")
   
@@ -48,6 +48,7 @@ graph_pcor <- function(
   x, # Data or cormat
   scale, 
   corMat, #Logical indicating if x is correlation matrix
+  unweighted = FALSE, # Should the graph be made unweighted using GeneNet?
   title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
@@ -65,8 +66,18 @@ graph_pcor <- function(
     x <- getCors(x, scale)
   }
   
-  g <- cor2pcor(x)
+  g <-  as.matrix(forceSymmetric(cor2pcor(x)))
+  
+  ### UNWEIGHTALIZE ###
+  if (unweighted)
+  {
+    net <- extract.network(ggm.test.edges(g, plot = FALSE))
+    g <- 1*as.matrix(sparseMatrix(net$node1,net$node2, dims=c(ncol(x),ncol(x))))
+    g <- g + t(g)
+  }
+
   colnames(g) <- rownames(g) <- colnames(x)
+
   
   Res <- list(
     graph = g,
@@ -76,14 +87,71 @@ graph_pcor <- function(
   
   if (title) 
   {
-    ann <- "Partial Correlations"
+      ann <- "Partial Correlations (unweighted)"
   } else ann <- NULL
 
   if (citation)
   {
-    cit <- CitationExpr("qgraph")
+    cit <- CitationExpr("corpcor")
   } else cit <- NULL
   
+  
+  Res$qgraph <- qgraph(g, title = ann, postExpression = cit, ...)
+  class(Res) <- "psynetGraph"
+  return(Res)
+}
+
+
+
+
+## pcor.shrink:
+graph_pcor.shrink <- function(
+  x, # Data or cormat
+  scale, 
+  unweighted = FALSE,
+  title = FALSE, citation = FALSE,
+  verbose = FALSE,
+  ... # Args sent to qgraph
+)
+{
+  if (verbose) message("psynet: Constructing  shrinkage partial correlation graph")
+  
+  if (missing(scale)) scale <- autoScale(x)
+  
+  if (scale != "continuous")
+  {
+    warning("Data treated as continous for adaptive LASSO partial correlations")
+  }
+  
+  Out <- corpcor:::pcor.shrink(x)
+  g <- Out
+  class(g) <- "matrix"
+  colnames(g) <- rownames(g) <- colnames(x)
+  g <- as.matrix(forceSymmetric(g))
+  
+  ### UNWEIGHTALIZE ###
+  if (unweighted)
+  {
+    net <- extract.network(ggm.test.edges(g, plot = FALSE))
+    g <- 1*as.matrix(sparseMatrix(net$node1,net$node2, dims=c(ncol(x),ncol(x))))
+    g <- g + t(g)
+  }
+  
+  Res <- list(
+    graph = g,
+    output = Out,
+    method = "pcor")
+  
+  
+  if (title) 
+  {
+    ann <- "Partial Correlations (shrinkage)"
+  } else ann <- NULL
+  
+  if (citation)
+  {
+    cit <- CitationExpr("corpcor")
+  } else cit <- NULL
   
   Res$qgraph <- qgraph(g, title = ann, postExpression = cit, ...)
   class(Res) <- "psynetGraph"
@@ -96,6 +164,7 @@ graph_alpcor <- function(
   scale, 
   title = FALSE, citation = FALSE,
   verbose = FALSE,
+  unweighted = FALSE,
   ... # Args sent to qgraph
 )
 {
@@ -107,9 +176,17 @@ graph_alpcor <- function(
   {
     warning("Data treated as continous for adaptive LASSO partial correlations")
   }
-  
+
   Out <- adalasso.net(x)
   g <- round(Out$pcor.adalasso,14)
+  g <- as.matrix(forceSymmetric(g))
+  
+  ### UNWEIGHTALIZE ###
+  if (unweighted)
+  {
+    g <- 1*(g!=0)
+  }
+  
   colnames(g) <- rownames(g) <- colnames(x)
   
   Res <- list(
@@ -137,6 +214,7 @@ graph_alpcor <- function(
 graph_plspcor <- function(
   x, # Data or cormat
   scale, 
+  unweighted = FALSE,
   title = FALSE, citation = FALSE,
   verbose = FALSE,
   ... # Args sent to qgraph
@@ -153,6 +231,16 @@ graph_plspcor <- function(
   
   Out <- pls.net(x)
   g <- round(Out$pcor,14)
+  g <- as.matrix(forceSymmetric(g))
+  
+  ### UNWEIGHTALIZE ###
+  if (unweighted)
+  {
+    net <- extract.network(ggm.test.edges(g, plot = FALSE))
+    g <- 1*as.matrix(sparseMatrix(net$node1,net$node2, dims=c(ncol(x),ncol(x))))
+    g <- g + t(g)
+  }
+  
   colnames(g) <- rownames(g) <- colnames(x)
   
   Res <- list(
@@ -544,11 +632,10 @@ graph_bnboot <- function(
 
 
 ### IsingFit
-
-# Partial least squares pcor:
 graph_IsingFit <- function(
   x, # Data or cormat
   scale, 
+  unweighted = FALSE,
   title = FALSE, citation = FALSE,
   verbose = FALSE,
   IsingFitArgs = list(),
@@ -559,13 +646,21 @@ graph_IsingFit <- function(
   
   if (missing(scale)) scale <- autoScale(x)
   
-  if (scale == "Ordinal")
+  if (scale != "dichotomous")
   {
-    warning("IsingFit routine not well suited for Ordinal data")
+    stop("IsingFit routine only supported for dichotomous data")
   }
   
   Res <- do.call(IsingFit,c(list(x=x, family = ifelse(scale=="dichotomous","binomial","gaussian"), plot = FALSE, 
                                  progressbar = FALSE), IsingFitArgs))
+  
+  g <- Res$weiadj
+  if (unweighted)
+  {
+    g <- 1*(g!=0)
+  }
+  
+  rownames(g) <- colnames(g) <- colnames(x)
   
   Res <- list(
     graph = Res$weiadj,
@@ -580,6 +675,66 @@ graph_IsingFit <- function(
   if (citation)
   {
     cit <- CitationExpr("IsingFit")
+  } else cit <- NULL
+  
+  Res$qgraph <- qgraph(Res$graph, title = ann, postExpression = cit, ...)
+  colnames(Res$graph) <- rownames(Res$graph) <- colnames(x)
+  class(Res) <- "psynetGraph"
+  return(Res)
+}
+
+
+
+
+
+
+
+
+######## glasso ############33
+
+graph_CVglasso <- function(
+  x, # Data
+  scale, 
+  unweighted = FALSE,
+  title = FALSE, citation = FALSE,
+  verbose = FALSE,
+  nonparanormal = TRUE,
+  cost = rmspe,
+  K = 10,
+  ... # Args sent to qgraph
+)
+{
+  if (verbose) message("psynet: Constructing k-fold CV glasso graph")
+  
+  if (missing(scale)) scale <- autoScale(x)
+  
+  if (scale != "continuous")
+  {
+    warning("k-fold CV glasso routine best suited for continuous data")
+  }
+  
+  g <- CVglasso(x, K=K, cost = cost, nonparanormal = nonparanormal)
+
+  if (unweighted)
+  {
+    g <- 1*(g!=0)
+  }
+  
+  rownames(g) <- colnames(g) <- colnames(x)
+  
+  Res <- list(
+    graph = g,
+    output = g,
+    method = "CVglasso")
+  
+  if (title) 
+  {
+    ann <- "k-fold CV glasso"
+  } else ann <- NULL
+  
+  if (citation)
+  {
+    cit <- CitationExpr("glasso")
   } else cit <- NULL
   
   Res$qgraph <- qgraph(Res$graph, title = ann, postExpression = cit, ...)
